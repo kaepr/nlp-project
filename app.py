@@ -12,24 +12,9 @@ model = TFAutoModelForQuestionAnswering.from_pretrained("bert-large-uncased-whol
 model_sim = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 
 # Sample Text
-text = r"""
-World War II or the Second World War, often abbreviated as WWII or WW2, starting from 1939 to 1945.It involved the vast majority of the world's countries—including all of the great powers—forming two opposing military alliances: the Allies and the Axis powers. In a total war directly involving more than 100 million personnel from more than 30 countries, the major participants threw their entire economic, industrial, and scientific capabilities behind the war effort, blurring the distinction between civilian and military resources. Aircraft played a major role in the conflict, enabling the strategic bombing of population centres and the only two uses of nuclear weapons in war to this day. World War II was by far the deadliest conflict in human history; it resulted in seventy million fatalities, a majority being civilians. Tens of millions of people died due to genocides (including the Holocaust), starvation, massacres, and disease. In the wake of the Axis defeat, Germany and Japan were occupied, and war crimes tribunals were conducted against German and Japanese leaders.
-"""
 
-questions = [
-    "Time period of world war 2?",
-    "Which alliances were a part of world war 2"
-]
-
-correct_answers = [
-    "1939 to 1945",
-    "Axis and Allies"
-]
-
-generated_answers = []
-
-def generate_answer(question):
-    inputs = tokenizer(question, text, add_special_tokens=True, return_tensors="tf")
+def generate_answer(question, input_text):
+    inputs = tokenizer(question, input_text, add_special_tokens=True, return_tensors="tf")
     input_ids = inputs["input_ids"].numpy()[0]
     outputs = model(inputs)
     answer_start_scores = outputs.start_logits
@@ -38,9 +23,6 @@ def generate_answer(question):
     answer_end = tf.argmax(answer_end_scores, axis=1).numpy()[0] + 1
     answer = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(input_ids[answer_start:answer_end]))
     return answer
-
-for question in questions:
-    generated_answers.append(generate_answer(question))
 
 def get_similarity(gen_answer, correct_answer):
     sentences = []
@@ -51,13 +33,18 @@ def get_similarity(gen_answer, correct_answer):
     return arr[0]
 
 
-for i in range(0,len(correct_answers)):
-    cur = get_similarity(correct_answers[i], generated_answers[i])
-    print("correct => ", correct_answers[i]," generated => ", generated_answers[i])
-    print(cur)
 
+def getResults(input_text, questions, correct_answers):
+    generated_answers = []
+    for question in questions:
+        generated_answers.append(generate_answer(question, input_text))
 
-def getResults(input_text, questions):
+    similarities = []
+    for i in range(0, len(correct_answers)):
+        sim = get_similarity(correct_answers[i], generated_answers[i])
+        similarities.append(sim)
+    
+    return [generated_answers, similarities]
     
 
 app = Flask(__name__)
@@ -79,4 +66,10 @@ def hello_world():
 def get_results():
     req_body = request.get_json(force=True)
     print(req_body)
-    return jsonify(req_body)
+    input_text = req_body['input_text']
+    questions = req_body['questions']
+    correct_answers = req_body['correct_answers']
+    print(input_text, questions, correct_answers)
+    results = getResults(input_text, questions, correct_answers)
+    print(results)
+    return jsonify(results)

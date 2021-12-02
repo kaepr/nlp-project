@@ -112,21 +112,24 @@ const Home: NextPage = () => {
     const res = await axios.post("http://127.0.0.1:5000/results", {
       input_text,
       questions,
+      correct_answers,
     });
 
     console.log(res.data);
   };
 
   return (
-    <>
+    <div>
       <QuestionForm handleSubmit={handleSubmit} />
-    </>
-    // <div className="grid grid-cols-3 gap-4 mt-4 mx-4">
-    //   <div className="bg-blue-200">asd</div>
-    //   <div className="bg-blue-400">123</div>
-    //   <div className="bg-blue-600">456</div>
-    // </div>
+    </div>
   );
 };
 
 export default Home;
+
+{
+  /* <div className="grid grid-cols-3 gap-4 mt-4 mx-4">
+       <div className="bg-blue-200">asd</div>
+       <div className="bg-blue-400">123</div>
+       <div className="bg-blue-600">456</div> */
+}
