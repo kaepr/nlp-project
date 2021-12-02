@@ -1,38 +1,131 @@
-import React, { useEffect, useState } from "react";
-import type { NextPage } from "next";
 import axios from "axios";
-import styles from "../styles/Home.module.css";
-import { Button, TextField } from "@mui/material";
+import { Field, FieldArray, Form, Formik } from "formik";
+import type { NextPage } from "next";
+import React from "react";
+
+const initialValues = {
+  input_text: "",
+  questions: [{ question: "", correct_answer: "" }],
+};
+
+interface IQuestions {
+  input_text: string;
+  questions: {
+    question: string;
+    correct_answer: string;
+  }[];
+}
+
+type QuestionProps = {
+  handleSubmit: Function;
+};
+
+const QuestionForm: React.FC<QuestionProps> = ({ handleSubmit }) => (
+  <div>
+    <Formik
+      initialValues={initialValues}
+      onSubmit={async (values) => {
+        await handleSubmit(values);
+      }}
+    >
+      {({ values }) => (
+        <Form>
+          <h1>Input Text</h1>
+          <label htmlFor="input_text">Input Text</label>
+          <Field
+            as="textarea"
+            id="input_text"
+            name="input_text"
+            placeholder=""
+          />
+
+          <h1>Questions</h1>
+          <FieldArray name="questions">
+            {({ insert, remove, push }) => (
+              <div>
+                {values.questions.length > 0 &&
+                  values.questions.map((question, index) => (
+                    <div className="row" key={index}>
+                      <div className="">
+                        <label htmlFor={`questions.${index}.question`}>
+                          Question
+                        </label>
+                        <Field
+                          name={`questions.${index}.question`}
+                          placeholder=""
+                          type="text"
+                        />
+                      </div>
+                      <div className="">
+                        <label htmlFor={`questions.${index}.correct_answer`}>
+                          Correct Answer
+                        </label>
+                        <Field
+                          name={`questions.${index}.correct_answer`}
+                          placeholder=""
+                          type="text"
+                        />
+                      </div>
+                      <div className="">
+                        <button
+                          type="button"
+                          className=""
+                          onClick={() => remove(index)}
+                        >
+                          X
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => push({ question: "", correct_answer: "" })}
+                >
+                  Add Question
+                </button>
+              </div>
+            )}
+          </FieldArray>
+          <button type="submit">Submit</button>
+        </Form>
+      )}
+    </Formik>
+  </div>
+);
 
 const Home: NextPage = () => {
-  const [questions, setQuestions] = useState<string[]>([]);
-  const [text, setText] = useState<string>("");
+  const handleSubmit = async (values: IQuestions) => {
+    const input_text = values.input_text;
+    const filteredQuestions = values.questions.filter((question) => {
+      if (question.question.length > 0 && question.correct_answer.length > 0) {
+        return true;
+      }
+      return false;
+    });
 
-  useEffect(() => {
-    async function getData() {
-      const res = await axios.post("http://127.0.0.1:5000/results", {
-        hello: "hi",
-      });
-      console.log(res.data);
-    }
+    const questions = filteredQuestions.map((question) => question.question);
+    const correct_answers = filteredQuestions.map(
+      (question) => question.correct_answer
+    );
 
-    getData();
-  }, []);
+    const res = await axios.post("http://127.0.0.1:5000/results", {
+      input_text,
+      questions,
+    });
 
-  const handleChange = (textData: string) => {
-    setText(textData);
-    console.log(textData);
+    console.log(res.data);
   };
 
   return (
-    <div className={styles.container}>
-      <TextField
-        multiline
-        variant="outlined"
-        value={text}
-        onChange={(e) => handleChange(e.target.value)}
-      />
-    </div>
+    <>
+      <QuestionForm handleSubmit={handleSubmit} />
+    </>
+    // <div className="grid grid-cols-3 gap-4 mt-4 mx-4">
+    //   <div className="bg-blue-200">asd</div>
+    //   <div className="bg-blue-400">123</div>
+    //   <div className="bg-blue-600">456</div>
+    // </div>
   );
 };
 
