@@ -1,4 +1,5 @@
 # Import Section
+import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from transformers import AutoTokenizer, TFAutoModelForQuestionAnswering
@@ -7,8 +8,8 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 # Initializing Models
-tokenizer = AutoTokenizer.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
-model = TFAutoModelForQuestionAnswering.from_pretrained("bert-large-uncased-whole-word-masking-finetuned-squad")
+tokenizer = AutoTokenizer.from_pretrained("distilbert-base-cased-distilled-squad")
+model = TFAutoModelForQuestionAnswering.from_pretrained("distilbert-base-cased-distilled-squad")
 model_sim = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
 
 # Sample Text
@@ -65,11 +66,42 @@ def hello_world():
 @app.route('/results', methods=["POST"])
 def get_results():
     req_body = request.get_json(force=True)
-    print(req_body)
-    input_text = req_body['input_text']
-    questions = req_body['questions']
-    correct_answers = req_body['correct_answers']
-    print(input_text, questions, correct_answers)
+    # print(req_body)
+    # data = json.loads(req_body)
+    data = req_body
+    input_text = data['input_text']
+    questions = data['questions']
+    correct_answers = data['correct_answers']
+    # print("printing values ==== " + input_text, questions, correct_answers, data)
     results = getResults(input_text, questions, correct_answers)
+    # print("results")
     print(results)
-    return jsonify(results)
+    gen_answer = results[0]
+    sims = results[1]
+
+    print("printing types")
+    print(type(sims))
+    print(type(gen_answer))
+
+    # sims = sims.tolist()
+
+    sims = list(sims)
+    
+    print(gen_answer)
+
+
+    gen_answer = list(gen_answer)
+
+
+    b = []
+    for item in sims:
+        print(item[0])
+        b.append(str(item[0]))
+
+    print(gen_answer, b)
+    
+    response = {
+        "similarity": b,
+        "generated_answers": gen_answer,
+    }
+    return response
