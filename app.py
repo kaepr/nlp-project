@@ -52,10 +52,6 @@ app = Flask(__name__)
 CORS(app)
 
 
-# NLP Tasks
-
-
-
 # Flask Routes
 
 @app.route('/')
@@ -66,40 +62,24 @@ def hello_world():
 @app.route('/results', methods=["POST"])
 def get_results():
     req_body = request.get_json(force=True)
-    # print(req_body)
-    # data = json.loads(req_body)
+
     data = req_body
     input_text = data['input_text']
     questions = data['questions']
     correct_answers = data['correct_answers']
-    # print("printing values ==== " + input_text, questions, correct_answers, data)
     results = getResults(input_text, questions, correct_answers)
-    # print("results")
-    print(results)
     gen_answer = results[0]
+    
     sims = results[1]
-
-    print("printing types")
-    print(type(sims))
-    print(type(gen_answer))
-
-    # sims = sims.tolist()
-
     sims = list(sims)
     
-    print(gen_answer)
-
-
     gen_answer = list(gen_answer)
-
-
+    
     b = []
     for item in sims:
         print(item[0])
         b.append(str(item[0]))
 
-    print(gen_answer, b)
-    
     response = {
         "similarity": b,
         "generated_answers": gen_answer,
