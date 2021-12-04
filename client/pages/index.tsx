@@ -5,7 +5,12 @@ import React, { useState, useEffect } from "react";
 import * as R from "ramda";
 import Slider from "react-input-slider";
 
-const isListEmpty = (list: any) => R.equals(R.length(list))(0);
+interface hasLengthProp {
+  length: number;
+}
+
+const isListEmpty = <T extends unknown>(list: ArrayLike<T>) =>
+  R.equals(R.length(list))(0);
 const isListNotEmpty = R.compose(R.not, isListEmpty);
 const mapIndexed = R.addIndex(R.map);
 
