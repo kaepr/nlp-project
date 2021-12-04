@@ -1,6 +1,5 @@
 # Import Section
-import json
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from flask_cors import CORS
 from transformers import AutoTokenizer, TFAutoModelForQuestionAnswering
 import tensorflow as tf
@@ -11,8 +10,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-cased-distilled-squad")
 model = TFAutoModelForQuestionAnswering.from_pretrained("distilbert-base-cased-distilled-squad")
 model_sim = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
-
-# Sample Text
 
 def generate_answer(question, input_text):
     inputs = tokenizer(question, input_text, add_special_tokens=True, return_tensors="tf")
@@ -33,8 +30,6 @@ def get_similarity(gen_answer, correct_answer):
     arr = cosine_similarity([sentence_embeddings[0]],sentence_embeddings[1:])
     return arr[0]
 
-
-
 def getResults(input_text, questions, correct_answers):
     generated_answers = []
     for question in questions:
@@ -47,12 +42,8 @@ def getResults(input_text, questions, correct_answers):
     
     return [generated_answers, similarities]
     
-
 app = Flask(__name__)
 CORS(app)
-
-
-# Flask Routes
 
 @app.route('/')
 def hello_world():
