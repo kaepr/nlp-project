@@ -77,7 +77,6 @@ def get_results():
     
     b = []
     for item in sims:
-        print(item[0])
         b.append(str(item[0]))
 
     response = {
