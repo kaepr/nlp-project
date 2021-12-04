@@ -1,12 +1,27 @@
 import axios from "axios";
 import { Field, FieldArray, Form, Formik } from "formik";
 import type { NextPage } from "next";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import * as R from "ramda";
+import Slider from "react-input-slider";
 
 const isListEmpty = (list: any) => R.equals(R.length(list))(0);
 const isListNotEmpty = R.compose(R.not, isListEmpty);
 const mapIndexed = R.addIndex(R.map);
+
+const getGrade = (val: number) => {
+  if (val >= 0.9) {
+    return "A+";
+  } else if (val >= 0.75) {
+    return "A-";
+  } else if (val >= 0.6) {
+    return "B";
+  } else if (val >= 0.5) {
+    return "C";
+  } else {
+    return "D";
+  }
+};
 
 const initialValues = {
   input_text:
@@ -54,7 +69,6 @@ const QuestionForm: React.FC<QuestionProps> = ({ handleSubmit }) => (
       {({ values }) => (
         <Form>
           <div className="mt-4">
-            <label htmlFor="input_text">Input Text</label>
             <Field
               as="textarea"
               id="input_text"
@@ -64,7 +78,6 @@ const QuestionForm: React.FC<QuestionProps> = ({ handleSubmit }) => (
             />
           </div>
 
-          <h1>Questions</h1>
           <FieldArray name="questions">
             {({ remove, push }) => (
               <div>
@@ -141,24 +154,54 @@ type ResultScreenProps = {
 
 const ResultScreen: React.FC<ResultScreenProps> = ({ data }) => {
   return (
-    <div className="border-2 mb-8 px-4 text-center">
-      <p className="text-lg">Result Screen</p>
-      <div className="">
-        <div className="grid grid-cols-3">
-          <div className=" place-content-start">Correct Answer</div>
-          <div className=" place-content-start">Extracted Answer</div>
-          <div className="">Score</div>
-        </div>
+    <div className="border-2 mb-8 px-4 pb-4 text-center">
+      <p className="text-xl m-4">Result Screen</p>
 
-        {data.map((item: any, index: React.Key | null | undefined) => {
-          return (
-            <div key={index} className="flex">
-              <div className="flex-1">{item.correct_answer}</div>
-              <div className="flex-1">{item.extracted_answer}</div>
-              <div className="flex-1">{item.score}</div>
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-3 p-2 text-white bg-gray-600 rounded-md">
+        <div className=" place-content-start">Correct Answer</div>
+        <div className=" place-content-start">Extracted Answer</div>
+        <div className="">Score</div>
+      </div>
+
+      {data.map((item: IResult, index: React.Key | null | undefined) => {
+        return <Row key={index} val={item} idx={index as number} />;
+      })}
+    </div>
+  );
+};
+
+type RowProps = {
+  val: IResult;
+  idx: number;
+};
+
+const Row: React.FC<RowProps> = ({ val, idx }) => {
+  const [num, setNum] = useState(parseFloat(val.score));
+  const [grade, setGrade] = useState(getGrade(parseFloat(val.score)));
+
+  useEffect(() => {
+    setGrade(getGrade(num));
+  }, [num]);
+
+  const bgColorNumber = idx % 2 == 0 ? "100" : "200";
+
+  return (
+    <div className={`flex p-2 px-2 bg-gray-${bgColorNumber}`}>
+      <div className="flex-1 ">{val.correct_answer}</div>
+      <div className="flex-1">{val.extracted_answer}</div>
+      <div className="flex-1 flex px-2">
+        <div className="flex-1">{num.toFixed(4)}</div>
+        <div className="flex-1 font-semibold text-center">{grade}</div>
+        <div className="flex-1">
+          <Slider
+            axis="x"
+            xmin={0}
+            xmax={1}
+            x={num}
+            onChange={({ x }) => setNum((state) => x)}
+            xstep={0.01}
+          />
+        </div>
       </div>
     </div>
   );
@@ -182,7 +225,14 @@ const Home: NextPage = () => {
     const questions = R.map(R.prop("question"), filteredQuestions);
     const correct_answers = R.map(R.prop("correct_answer"), filteredQuestions);
 
-    const { data } = await axios.post("http://127.0.0.1:5000/results", {
+    const {
+      data,
+    }: {
+      data: {
+        similarity: string[];
+        generated_answers: string[];
+      };
+    } = await axios.post("http://127.0.0.1:5000/results", {
       input_text,
       questions,
       correct_answers,
@@ -191,8 +241,8 @@ const Home: NextPage = () => {
     const output = mapIndexed(
       (val, idx) => ({
         correct_answer: val,
-        extracted_answer: data.generated_answers[idx] as string,
-        score: data.similarity[idx] as string,
+        extracted_answer: data.generated_answers[idx],
+        score: data.similarity[idx],
       }),
       correct_answers
     ) as {
@@ -209,7 +259,11 @@ const Home: NextPage = () => {
     <div className="mx-auto max-w-7xl px-4">
       <QuestionForm handleSubmit={handleSubmit} />
 
-      {loading ? <div>Waiting...</div> : <ResultScreen data={resultData} />}
+      {loading ? (
+        <div className="mb-4">Waiting...</div>
+      ) : (
+        <ResultScreen data={resultData} />
+      )}
     </div>
   );
 };
